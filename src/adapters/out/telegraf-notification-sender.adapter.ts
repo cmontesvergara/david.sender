@@ -11,7 +11,9 @@ export class TelegrafNotificationSender implements NotificationSender {
     @InjectBot()
     private readonly bot: Telegraf<any>,
     private prismaService: PrismaService,
-  ) {}
+  ) {
+    console.log('TelegrafNotificationSender initialized', this.bot);
+  }
 
   async send(phone: string, payload: any): Promise<void> {
     if (phone.length <= 10) {

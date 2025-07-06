@@ -12,8 +12,7 @@ COPY --chown=node:node . .
 
 RUN npx prisma generate --schema=src/infrastructure/prisma/schema.prisma
 
-RUN npm ci \
-    && npm run build \
+RUN npm run build \
     && npm prune --omit=dev
 
 # ---
@@ -28,5 +27,6 @@ WORKDIR /home/node
 COPY --from=builder --chown=node:node /home/node/package*.json ./
 COPY --from=builder --chown=node:node /home/node/node_modules/ ./node_modules/
 COPY --from=builder --chown=node:node /home/node/dist/ ./dist/
+COPY --from=builder --chown=node:node /home/node/.prisma/ ./.prisma/
 
 CMD ["node", "dist/main"]

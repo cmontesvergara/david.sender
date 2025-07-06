@@ -9,16 +9,17 @@ WORKDIR /home/node
 
 # Copia solo lo necesario para instalar deps
 COPY package*.json ./
-RUN npm i
+RUN npm ci
 
 # Copia todo lo demás (código fuente, prisma, etc.)
 COPY --chown=node:node . .
 
-# 👉 Prisma generate antes del build
-RUN npx prisma generate --schema=src/infrastructure/prisma/schema.prisma
 
 # Build y prune
 RUN npm run build && npm prune --omit=dev
+
+# 👉 Prisma generate antes del build
+RUN npx prisma generate --schema=src/infrastructure/prisma/schema.prisma
 
 # ---------- RUNTIME STAGE ----------
 FROM node:22.17.0-alpine

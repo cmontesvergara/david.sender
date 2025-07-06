@@ -1,51 +1,64 @@
-// Esquema Prisma para eventos, chats suscritos y OTPs
+// Prisma schema para eventos, chats suscritos y OTPs
 
 generator client {
     provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql" // O el que uses: mysql, sqlite, etc.
+    provider = "postgresql"
     url      = env("DATABASE_URL")
 }
 
+enum EventType {
+    MEETING
+    REMINDER
+    ALERT
+    // Agrega más tipos si los necesitas
+}
+
 model Event {
-    id          Int           @id @default(autoincrement())
+    id          Int       @id @default(autoincrement())
     title       String
     description String
-    type        String
+    type        EventType // Usamos enum en lugar de string libre
     ownerId     String
     ownerDomain String
-    createdAt   DateTime      @default(now())
-    chats       ChatOnEvent[]
-    // Puedes agregar más campos según necesidad
+    createdAt   DateTime  @default(now())
+
+    chats ChatOnEvent[]
 }
 
 model Chat {
-    id        BigInt        @id // Telegram chat id puede ser grande
+    id        BigInt  @id // Telegram chat id
     type      String
-    title     String? // Solo para grupos/canales
-    username  String? // Solo si aplica
-    firstName String? // Solo para usuarios
-    lastName  String? // Solo para usuarios
-    phone     String?       @unique
+    title     String?
+    username  String?
+    firstName String?
+    lastName  String?
+    phone     String  @unique // Ahora es requerido para relaciones sólidas
+
     events    ChatOnEvent[]
     eventOtps EventOtp[]
 }
 
 model ChatOnEvent {
-    id      Int    @id @default(autoincrement())
-    event   Event  @relation(fields: [eventId], references: [id])
+    id Int @id @default(autoincrement())
+
+    event   Event @relation(fields: [eventId], references: [id])
     eventId Int
-    chat    Chat   @relation(fields: [chatId], references: [id])
-    chatId  BigInt
-    // Puedes agregar campos de auditoría si lo deseas
+
+    chat   Chat   @relation(fields: [chatId], references: [id])
+    chatId BigInt
+
+    @@unique([chatId, eventId]) // Para evitar duplicados
 }
 
 model EventOtp {
-    id             Int      @id @default(autoincrement())
-    chat           Chat     @relation(fields: [phoneVinculate], references: [phone])
+    id Int @id @default(autoincrement())
+
     phoneVinculate String   @unique
     otp            String
     createdAt      DateTime @default(now())
+
+    chat Chat @relation(fields: [phoneVinculate], references: [phone])
 }

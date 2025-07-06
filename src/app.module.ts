@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
-import { TelegrafModule } from 'nestjs-telegraf';
+import { TelegrafModule, TelegrafModuleOptions } from 'nestjs-telegraf';
 import { session } from 'telegraf';
 import { EventsController } from './adapters/in/rest-api/events.controller';
 import { NotificationsController } from './adapters/in/rest-api/notifications.controller'; // Si lo usas
@@ -14,12 +15,18 @@ import { TelegramModule } from './infrastructure/telegram/telegram.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
-    TelegrafModule.forRoot({
-      token: process.env.BOT_TOKEN!,
-      botName: 'echo',
-      middlewares: [session()],
-      include: [ScenesModule],
+    ConfigModule.forRoot({ isGlobal: true }),
+
+    TelegrafModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (
+        configService: ConfigService,
+      ): Promise<TelegrafModuleOptions> => ({
+        token: configService.get<string>('BOT_TOKEN')!,
+        middlewares: [session()],
+        include: [ScenesModule],
+      }),
     }),
     ScenesModule,
     TelegramModule,

@@ -8,7 +8,7 @@ import { NotificationSender } from '../../domain/interfaces/notification-sender.
 @Injectable()
 export class TelegrafNotificationSender implements NotificationSender {
   constructor(
-    @InjectBot('echo')
+    @InjectBot()
     private readonly bot: Telegraf<any>,
     private prismaService: PrismaService,
   ) {}

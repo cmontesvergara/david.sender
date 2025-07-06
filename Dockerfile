@@ -12,7 +12,9 @@ COPY --chown=node:node . .
 
 RUN npx prisma generate --schema=src/infrastructure/prisma/schema.prisma
 
-RUN npm ci --omit=dev && npm run build
+RUN npm ci \
+    && npm run build \
+    && npm prune --omit=dev
 
 # ---
 

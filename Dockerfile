@@ -9,7 +9,7 @@ WORKDIR /home/node
 
 # Copia solo lo necesario para instalar deps
 COPY package*.json ./
-RUN npm ci
+RUN npm i
 
 # Copia todo lo demás (código fuente, prisma, etc.)
 COPY --chown=node:node . .

@@ -9,6 +9,9 @@ COPY package*.json ./
 RUN npm ci
 
 COPY --chown=node:node . .
+
+RUN npx prisma generate --schema=src/infrastructure/prisma/schema.prisma
+
 RUN RUN npm ci --omit=dev && npm run build
 
 # ---

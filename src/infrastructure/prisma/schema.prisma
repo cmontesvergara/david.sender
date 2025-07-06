@@ -1,0 +1,51 @@
+// Esquema Prisma para eventos, chats suscritos y OTPs
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql" // O el que uses: mysql, sqlite, etc.
+    url      = env("DATABASE_URL")
+}
+
+model Event {
+    id          Int           @id @default(autoincrement())
+    title       String
+    description String
+    type        String
+    ownerId     String
+    ownerDomain String
+    createdAt   DateTime      @default(now())
+    chats       ChatOnEvent[]
+    // Puedes agregar más campos según necesidad
+}
+
+model Chat {
+    id        BigInt        @id // Telegram chat id puede ser grande
+    type      String
+    title     String? // Solo para grupos/canales
+    username  String? // Solo si aplica
+    firstName String? // Solo para usuarios
+    lastName  String? // Solo para usuarios
+    phone     String?       @unique
+    events    ChatOnEvent[]
+    eventOtps EventOtp[]
+}
+
+model ChatOnEvent {
+    id      Int    @id @default(autoincrement())
+    event   Event  @relation(fields: [eventId], references: [id])
+    eventId Int
+    chat    Chat   @relation(fields: [chatId], references: [id])
+    chatId  BigInt
+    // Puedes agregar campos de auditoría si lo deseas
+}
+
+model EventOtp {
+    id             Int      @id @default(autoincrement())
+    chat           Chat     @relation(fields: [phoneVinculate], references: [phone])
+    phoneVinculate String   @unique
+    otp            String
+    createdAt      DateTime @default(now())
+}

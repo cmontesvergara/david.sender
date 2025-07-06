@@ -20,8 +20,6 @@ RUN npx prisma generate --schema=src/infrastructure/prisma/schema.prisma
 # Build y prune
 RUN npm run build && npm prune --omit=dev
 
----
-
 # ---------- RUNTIME STAGE ----------
 FROM node:22.17.0-alpine
 

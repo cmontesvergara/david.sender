@@ -1,0 +1,25 @@
+# Dependencias locales que no deben ir al contenedor
+node_modules
+dist
+
+# Archivos y carpetas innecesarios
+Dockerfile
+.dockerignore
+*.log
+*.env
+*.env.*
+
+# Control de versiones
+.git
+.gitignore
+
+# Tests y coverage
+test
+coverage
+
+# Archivos de desarrollo
+*.md
+*.ts
+*.swp
+.vscode
+.idea

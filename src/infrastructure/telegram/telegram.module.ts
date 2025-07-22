@@ -1,7 +1,7 @@
 import { Global, Module } from '@nestjs/common';
-import { PrismaEventSubscriptionRepository } from 'src/adapters/out/prisma-event-suscription-repository.adapter';
-import { TelegrafNotificationSender } from 'src/adapters/out/telegraf-notification-sender.adapter';
-import { PrismaChatRepository } from '../../adapters/out/prisma-chat-repository.adapter';
+import { PrismaChatRepository } from 'adapters/out/prisma-chat-repository.adapter';
+import { PrismaEventSubscriptionRepository } from 'adapters/out/prisma-event-suscription-repository.adapter';
+import { TelegrafNotificationSender } from 'adapters/out/telegraf-notification-sender.adapter';
 @Global()
 @Module({
   imports: [],

@@ -12,6 +12,7 @@ import { NotificationModule } from './infrastructure/notification/notification.m
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { ScenesModule } from './infrastructure/scenes/scenes.module';
 import { TelegramModule } from './infrastructure/telegram/telegram.module';
+import { WhatsappGateway } from './whatsapp/whatsapp.gateway';
 
 @Module({
   imports: [
@@ -36,5 +37,6 @@ import { TelegramModule } from './infrastructure/telegram/telegram.module';
     ChatModule,
   ],
   controllers: [NotificationsController, EventsController],
+  providers: [WhatsappGateway],
 })
 export class AppModule {}

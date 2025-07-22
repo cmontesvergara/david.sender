@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>WhatsApp - Sesión y QR</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        input {
+            padding: 0.5rem;
+            font-size: 1rem;
+            width: 250px;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            margin: 0.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        img {
+            max-width: 100%;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Gestión de sesión WhatsApp</h1>
+
+    <input type="text" id="telefono" placeholder="Ingresa número (e.g. 573001112233)" />
+
+    <div>
+        <button onclick="iniciarSesion()">Iniciar sesión</button>
+        <button onclick="verQR()">Ver QR</button>
+    </div>
+
+    <div id="resultado"></div>
+
+    <script>
+        async function iniciarSesion() {
+            const phone = document.getElementById('telefono').value.trim();
+            if (!phone) {
+                alert('Por favor ingresa un número de teléfono.');
+                return;
+            }
+
+            try {
+                const respuesta = await fetch(`http://localhost:3000/api/v1/notifications/whatsapp/session/init/${phone}`, {
+                    method: 'GET'
+                });
+
+                if (respuesta.ok) {
+                    alert('Sesión iniciada correctamente. Ahora puedes ver el QR.');
+                } else {
+                    const err = await respuesta.text();
+                    throw new Error(err || 'Error desconocido al iniciar la sesión.');
+                }
+            } catch (error) {
+                console.error('Error al iniciar sesión:', error);
+                alert('Error al iniciar sesión: ' + error.message);
+            }
+        }
+
+        async function verQR() {
+            const phone = document.getElementById('telefono').value.trim();
+            if (!phone) {
+                alert('Por favor ingresa un número de teléfono.');
+                return;
+            }
+
+            try {
+                const respuesta = await fetch(`http://localhost:3000/api/v1/notifications/whatsapp/session/qr/${phone}`);
+                const data = await respuesta.json();
+
+                if (data.qr) {
+                    const img = document.createElement('img');
+                    img.src = data.qr;
+                    const contenedor = document.getElementById('resultado');
+                    contenedor.innerHTML = '';
+                    contenedor.appendChild(img);
+                } else {
+                    alert('No se encontró la clave "qr" en la respuesta.');
+                }
+            } catch (error) {
+                console.error('Error al obtener el QR:', error);
+                alert('Error al cargar el QR.');
+            }
+        }
+    </script>
+</body>
+
+</html>

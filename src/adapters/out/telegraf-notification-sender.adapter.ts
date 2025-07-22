@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'infrastructure/prisma/prisma.service';
 import { InjectBot } from 'nestjs-telegraf';
-import { PrismaService } from 'src/infrastructure/prisma/prisma.service';
-import { TelegramMessageFormatter } from 'src/shared/helpers/telegram-message-formatter';
+import { MessageFormatter } from 'shared/formatters/message-formatter';
 import { Telegraf } from 'telegraf';
 import { NotificationSender } from '../../domain/interfaces/notification-sender.interface';
 
@@ -37,11 +37,9 @@ export class TelegrafNotificationSender implements NotificationSender {
       url: 'Enlace de verificación',
     };
 
-    const formatter = new TelegramMessageFormatter(
-      { phone, payload },
-      labelMap,
-      true,
-    );
+    const formatter = new MessageFormatter({ phone, payload }, labelMap, {
+      flatten: true,
+    });
 
     const md = formatter.toMarkdown();
 

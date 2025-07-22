@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
+import { WhatsappPath } from '@/common/constants/whatsapp-path.enum';
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { WASocket } from '@whiskeysockets/baileys';
 import { SendWhatsappNotificationDto } from 'adapters/in/rest-api/dto/send-notification.dto';
 import { SendNotificationToChatUseCase } from 'application/use-cases/send-notification-to-chat.use-case';
 import {
@@ -9,42 +10,39 @@ import {
 } from 'common/events/internal-socket-events';
 import { PinoLoggerService } from 'common/logger/logger.service';
 import * as fs from 'fs/promises';
-import * as path from 'path';
 import { MessageFormatter } from 'shared/formatters/message-formatter';
-import { startBaileys, WppSessionDisconnectEvent } from './baileys.client';
+import { FileService } from './file.service';
+import { WhatsappSession } from './whatsapp-session';
 import { WhatsappGateway } from './whatsapp.gateway';
+
 @Injectable()
 export class WhatsappService implements OnModuleInit {
-  private sessions: Record<string, WASocket> = {};
-  private sessionStates: Record<
-    string,
-    'connecting' | 'connected' | 'disconnected'
-  > = {};
+  private sessions: Record<string, WhatsappSession> = {};
 
   constructor(
     private readonly gateway: WhatsappGateway,
     private readonly sendNotification: SendNotificationToChatUseCase,
     private readonly logger: PinoLoggerService,
+    private readonly qrFileService: FileService,
   ) {}
 
   async onModuleInit() {
-    internalSocketEvents.on(
-      WppSocketEvents.SessionDisconnected,
-      (data: WppSessionDisconnectEvent) => {
-        void this.endSession(data['agent']);
+    internalSocketEvents.on(WppSocketEvents.SessionDisconnected, (data) => {
+      const phone = data.agent;
+      void this.endSession(phone);
+      if (data.sendNotification) {
         void this.sendNotification.execute('573503417243', {
           meta: {
             title: 'AGENTE FUERA DE SERVICIO',
             type: 'ALERTA',
           },
-          body: {
-            ...data,
-          },
+          body: { ...data },
           footer: 'No compartas este código.',
         });
-      },
-    );
-    const authDir = path.join(__dirname, '..', '..', 'auth');
+      }
+    });
+
+    const authDir = WhatsappPath.AUTH_ROOT;
     try {
       const exists = await fs
         .access(authDir)
@@ -52,86 +50,75 @@ export class WhatsappService implements OnModuleInit {
         .catch(() => false);
 
       if (!exists) {
-        console.log(
-          '🔍 La carpeta ./auth no existe, no hay sesiones previas que cargar.',
+        this.logger.info(
+          '🔍 No hay sesiones previas que cargar (authDir no existe).',
         );
         return;
       }
 
       const entries = await fs.readdir(authDir, { withFileTypes: true });
-      const phoneFolders = entries
-        .filter((entry) => entry.isDirectory())
-        .map((dir) => dir.name);
+      const phoneDirs = entries.filter((entry) => entry.isDirectory());
+      const phones = phoneDirs.map((dir) => dir.name);
 
-      for (const phone of phoneFolders) {
+      if (phones.length === 0) {
+        this.logger.info(
+          '🔍 No hay sesiones previas que cargar (authDir está vacío).',
+        );
+        return;
+      }
+
+      this.logger.info(
+        `📦 Cargando ${phones.length} sesión(es) desde authDir...`,
+      );
+
+      for (const phone of phones) {
         await this.startSession(phone);
       }
     } catch (err) {
-      console.error('Error leyendo directorio ./auth:', err);
+      this.logger.error(
+        '❌ Error al leer el directorio de sesiones ./auth:',
+        err,
+      );
     }
   }
 
-  async startSession(phone: string) {
-    const state = this.sessionStates[phone];
-    this.logger.info(`sessionState rescued [${state}]`);
-    if (state === 'connecting' || state === 'connected') return;
-
-    this.sessionStates[phone] = 'connecting';
-    this.logger.info(`sessionState updated [${state}]`);
-    try {
-      await startBaileys(phone, this.gateway, (sock) => {
-        this.sessions[phone] = sock;
-        this.sessionStates[phone] = 'connected';
-      });
-    } catch (err) {
-      this.sessionStates[phone] = 'disconnected';
-      this.logger.error(`[${phone}] Error al iniciar sesión`, err);
+  async startSession(phone: string): Promise<void> {
+    if (this.sessions[phone]) {
+      this.logger.warn(`La sesión [${phone}] ya está activa.`);
+      return;
     }
+
+    const session = new WhatsappSession(
+      phone,
+      this.gateway,
+      (sock) => {
+        this.logger.info(`[${phone}] Socket inicializado correctamente.`);
+        // podrías guardar el socket aquí si necesitas acceso directo
+      },
+      this.qrFileService,
+    );
+
+    this.sessions[phone] = session;
+    await session.start();
   }
 
   async getQR(phone: string): Promise<string | null> {
-    const state = this.sessionStates[phone];
-    console.log(state);
-    if (state === 'connecting' || state === 'connected') return null;
-    const qrPath = path.join(
-      __dirname,
-      '..',
-      '..',
-      'auth',
-      `${phone}`,
-      `qr-${phone}.json`,
-    );
+    const qrPath = WhatsappPath.qrFile(phone);
     try {
       const content = await fs.readFile(qrPath, 'utf-8');
       const data = JSON.parse(content);
-      setTimeout(() => {
-        try {
-          void fs.rm(qrPath, { recursive: true, force: true });
-          this.logger.info(`🧹 QR expirado eliminado: qr-${phone}.json`);
-        } catch (e) {
-          this.logger.warn(
-            `⚠️ No se pudo eliminar el QR expirado para el agente: ${phone}:`,
-            e,
-          );
-        }
-      }, 30000);
-      return {
-        ...data.qr,
-        expireOn: 30000,
-      }; //
+
+      return data.qr;
     } catch {
       return null;
     }
   }
+
   async sendTextMessage(body: SendWhatsappNotificationDto) {
-    const sock = this.sessions[body.agent];
-    this.logger.info('socket successfully rescued');
-    if (!sock) {
-      this.logger.error(`[${body.agent}] WhatsApp Agent not initialized`);
-      return {
-        status: 403,
-        message: ' Agent not Available.',
-      };
+    const session = this.sessions[body.agent];
+    if (!session) {
+      this.logger.error(`[${body.agent}] Agente no inicializado.`);
+      return { status: 403, message: 'Agente no disponible.' };
     }
 
     const labelMap = {
@@ -149,44 +136,25 @@ export class WhatsappService implements OnModuleInit {
       labelMap,
       { flatten: true },
     );
-    this.logger.info('payload successfully formatted');
-    const md = formatter.toMarkdown();
-    const reciper = `57${body.phone}`;
-    await sock.sendMessage(`${reciper}@s.whatsapp.net`, {
-      text: md,
-    });
-    this.logger.info(`message successfully sended to ${reciper}`);
-    return {
-      status: 200,
-      message: 'sent.',
-    };
+
+    const message = formatter.toMarkdown();
+    const jid = `57${body.phone}@s.whatsapp.net`;
+
+    await session.sendText(jid, message);
+    this.logger.info(`📨 Mensaje enviado a ${jid}`);
+
+    return { status: 200, message: 'Enviado.' };
   }
+
   async endSession(phone: string): Promise<void> {
     const session = this.sessions[phone];
     if (session) {
       try {
-        await session.logout();
+        await session.logout(phone);
       } catch (e) {
         this.logger.warn(`⚠️ Error al cerrar sesión de ${phone}:`, e);
       }
     }
-
-    // Elimina la carpeta de autenticación
-    const authPath = path.join(__dirname, '..', '..', 'auth', phone);
-    try {
-      await fs.rm(authPath, { recursive: true, force: true });
-      this.logger.info(`🧹 Carpeta de sesión eliminada: ${authPath}`);
-    } catch (e) {
-      this.logger.warn(
-        `⚠️ No se pudo eliminar la carpeta de sesión ${phone}:`,
-        e,
-      );
-    }
-
-    // Elimina del mapa en memoria
     delete this.sessions[phone];
-    if ('sessionStates' in this) {
-      delete this.sessionStates[phone];
-    }
   }
 }

@@ -1,6 +1,6 @@
+import { CreateChatUseCase } from 'application/use-cases/create-chat.use-case';
+import { Chat } from 'domain/entities/chat.entity';
 import { Action, Ctx, On, Scene, SceneEnter } from 'nestjs-telegraf';
-import { CreateChatUseCase } from 'src/application/use-cases/create-chat.use-case';
-import { Chat } from 'src/domain/entities/chat.entity';
 import {
   Chat as ChatType,
   Message,

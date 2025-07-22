@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { EventSubscriptionRepository } from 'src/domain/interfaces/event-subscription-repository.interface';
-import { ChatRepository } from '../../domain/interfaces/chat-repository.interface';
+import { ChatRepository } from 'domain/interfaces/chat-repository.interface';
+import { EventSubscriptionRepository } from 'domain/interfaces/event-subscription-repository.interface';
 
 @Injectable()
 export class SubscribeToEventUseCase {

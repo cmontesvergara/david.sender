@@ -6,13 +6,15 @@ import { TelegrafModule, TelegrafModuleOptions } from 'nestjs-telegraf';
 import { session } from 'telegraf';
 import { EventsController } from './adapters/in/rest-api/events.controller';
 import { NotificationsController } from './adapters/in/rest-api/notifications.controller'; // Si lo usas
+import { LoggerModule } from './common/logger/logger.module';
 import { ChatModule } from './infrastructure/chat/chat.module';
 import { EventModule } from './infrastructure/event/event.module';
 import { NotificationModule } from './infrastructure/notification/notification.module';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { ScenesModule } from './infrastructure/scenes/scenes.module';
 import { TelegramModule } from './infrastructure/telegram/telegram.module';
-import { WhatsappGateway } from './whatsapp/whatsapp.gateway';
+import { WhatsappGateway } from './infrastructure/whatsapp/whatsapp.gateway';
+import { WhatsappModule } from './infrastructure/whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -24,7 +26,7 @@ import { WhatsappGateway } from './whatsapp/whatsapp.gateway';
       useFactory: async (
         configService: ConfigService,
       ): Promise<TelegrafModuleOptions> => ({
-        token: configService.get<string>('BOT_TOKEN')!,
+        token: configService.get<string>('TELEGRAM_BOT_TOKEN')!, //
         middlewares: [session()],
         include: [ScenesModule],
       }),
@@ -35,6 +37,8 @@ import { WhatsappGateway } from './whatsapp/whatsapp.gateway';
     NotificationModule,
     EventModule,
     ChatModule,
+    LoggerModule,
+    WhatsappModule,
   ],
   controllers: [NotificationsController, EventsController],
   providers: [WhatsappGateway],

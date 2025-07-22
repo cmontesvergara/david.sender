@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Module } from '@nestjs/common';
-import { CreateChatUseCase } from 'src/application/use-cases/create-chat.use-case';
-import { ChatRepository } from 'src/domain/interfaces/chat-repository.interface';
+import { CreateChatUseCase } from 'application/use-cases/create-chat.use-case';
+import { ChatRepository } from 'domain/interfaces/chat-repository.interface';
 
 @Module({
   imports: [],

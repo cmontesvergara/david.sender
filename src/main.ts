@@ -1,11 +1,11 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { startBaileys } from './whatsapp/baileys.client';
-import { WhatsappGateway } from './whatsapp/whatsapp.gateway';
+import { requestLoggerMiddleware } from './common/logger/request-logger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableCors();
   app.enableShutdownHooks();
   app.useGlobalPipes(
     new ValidationPipe({
@@ -14,9 +14,7 @@ async function bootstrap() {
       transform: true, // Transforma automáticamente los datos entrante
     }),
   );
-
-  const whatsappGateway = app.get(WhatsappGateway);
-  await startBaileys(whatsappGateway);
+  app.use(requestLoggerMiddleware);
   await app.listen(process.env.PORT ?? 3000);
 }
 void bootstrap();

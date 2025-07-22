@@ -3,7 +3,7 @@ type MessageMeta = {
   type?: string;
 };
 
-interface TelegramPayload {
+interface MessageFormatterPayload {
   phone?: string;
   countryCode?: string;
   payload: {
@@ -13,11 +13,15 @@ interface TelegramPayload {
   };
 }
 
-export class TelegramMessageFormatter {
+export class MessageFormatter {
   constructor(
-    private data: TelegramPayload,
-    private labelMap?: Record<string, string>, // Traducción de claves
-    private flatten: boolean = false, // Activar flattening
+    private data: MessageFormatterPayload,
+    private labelMap?: Record<string, string>,
+    private options?: {
+      flatten?: boolean;
+      parseUrl?: boolean;
+      [key: string]: any;
+    },
   ) {}
 
   public toMarkdown(): string {
@@ -44,7 +48,7 @@ export class TelegramMessageFormatter {
     }
 
     const header = `*${metaTitle}* ${emoji}`;
-    const bodyLines = this.flatten
+    const bodyLines = this.options?.flatten
       ? this.formatBodyFlatMarkdown(body)
       : this.formatBodyMarkdown(body);
     const footerLine = footer ? `\n${footer}` : '';
@@ -85,15 +89,15 @@ export class TelegramMessageFormatter {
       }
 
       const label = this.getLabel(fullKey);
-      const emoji = this.getEmojiForKey(key);
-      const formattedKey = `*${emoji} ${label}:*`;
+      const emoji = key.includes('empty') ? '' : this.getEmojiForKey(key);
+      const formattedKey = key.includes('empty') ? '' : `*${emoji} ${label}:*`;
       return [this.formatValueMarkdown(formattedKey, value)];
     });
   }
 
   private formatValueMarkdown(label: string, value: any): string {
     const stringValue = String(value);
-    if (this.isURL(stringValue)) {
+    if (this.isURL(stringValue) && this.options?.parseUrl) {
       return `${label} [${stringValue}](${stringValue})`;
     }
     return `${label} ${stringValue}`;
@@ -123,6 +127,8 @@ export class TelegramMessageFormatter {
       link: '🔗',
       url: '🌐',
       expiresin: '⏳',
+      message: '💬',
+      empty: '',
     };
 
     const normalizedKey = key.toLowerCase();

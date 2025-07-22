@@ -96,3 +96,264 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+```
+notibot
+├─ .dockerignore
+├─ .prettierrc
+├─ Dockerfile
+├─ README.md
+├─ auth
+├─ captain-definition
+├─ dist
+│  ├─ adapters
+│  │  ├─ in
+│  │  │  ├─ rest-api
+│  │  │  │  ├─ dto
+│  │  │  │  │  ├─ create-event.dto.d.ts
+│  │  │  │  │  ├─ create-event.dto.js
+│  │  │  │  │  ├─ create-event.dto.js.map
+│  │  │  │  │  ├─ send-notification.dto.d.ts
+│  │  │  │  │  ├─ send-notification.dto.js
+│  │  │  │  │  ├─ send-notification.dto.js.map
+│  │  │  │  │  ├─ suscribe-to-event.dto.d.ts
+│  │  │  │  │  ├─ suscribe-to-event.dto.js
+│  │  │  │  │  └─ suscribe-to-event.dto.js.map
+│  │  │  │  ├─ events.controller.d.ts
+│  │  │  │  ├─ events.controller.js
+│  │  │  │  ├─ events.controller.js.map
+│  │  │  │  ├─ notifications.controller.d.ts
+│  │  │  │  ├─ notifications.controller.js
+│  │  │  │  └─ notifications.controller.js.map
+│  │  │  └─ telegram
+│  │  │     ├─ interfaces
+│  │  │     │  ├─ context.interface.d.ts
+│  │  │     │  ├─ context.interface.js
+│  │  │     │  └─ context.interface.js.map
+│  │  │     └─ scenes
+│  │  │        ├─ create-chat
+│  │  │        │  ├─ create-chat.scene.d.ts
+│  │  │        │  ├─ create-chat.scene.js
+│  │  │        │  ├─ create-chat.scene.js.map
+│  │  │        │  ├─ create-chat.update.d.ts
+│  │  │        │  ├─ create-chat.update.js
+│  │  │        │  └─ create-chat.update.js.map
+│  │  │        └─ menu
+│  │  │           ├─ menu.update.d.ts
+│  │  │           ├─ menu.update.js
+│  │  │           └─ menu.update.js.map
+│  │  └─ out
+│  │     ├─ prisma-chat-repository.adapter.d.ts
+│  │     ├─ prisma-chat-repository.adapter.js
+│  │     ├─ prisma-chat-repository.adapter.js.map
+│  │     ├─ prisma-event-repository.adapter.d.ts
+│  │     ├─ prisma-event-repository.adapter.js
+│  │     ├─ prisma-event-repository.adapter.js.map
+│  │     ├─ prisma-event-suscription-repository.adapter.d.ts
+│  │     ├─ prisma-event-suscription-repository.adapter.js
+│  │     ├─ prisma-event-suscription-repository.adapter.js.map
+│  │     ├─ telegraf-notification-sender.adapter.d.ts
+│  │     ├─ telegraf-notification-sender.adapter.js
+│  │     └─ telegraf-notification-sender.adapter.js.map
+│  ├─ app.module.d.ts
+│  ├─ app.module.js
+│  ├─ app.module.js.map
+│  ├─ app.service.d.ts
+│  ├─ app.service.js
+│  ├─ app.service.js.map
+│  ├─ application
+│  │  └─ use-cases
+│  │     ├─ create-chat.use-case.d.ts
+│  │     ├─ create-chat.use-case.js
+│  │     ├─ create-chat.use-case.js.map
+│  │     ├─ create-event.use-case.d.ts
+│  │     ├─ create-event.use-case.js
+│  │     ├─ create-event.use-case.js.map
+│  │     ├─ send-notification-to-chat.use-case.d.ts
+│  │     ├─ send-notification-to-chat.use-case.js
+│  │     ├─ send-notification-to-chat.use-case.js.map
+│  │     ├─ subscribe-to-event.use-case.d.ts
+│  │     ├─ subscribe-to-event.use-case.js
+│  │     └─ subscribe-to-event.use-case.js.map
+│  ├─ common
+│  │  ├─ events
+│  │  │  ├─ internal-socket-events.d.ts
+│  │  │  ├─ internal-socket-events.js
+│  │  │  └─ internal-socket-events.js.map
+│  │  └─ logger
+│  │     ├─ logger.module.d.ts
+│  │     ├─ logger.module.js
+│  │     ├─ logger.module.js.map
+│  │     ├─ logger.service.d.ts
+│  │     ├─ logger.service.js
+│  │     ├─ logger.service.js.map
+│  │     ├─ request-context.d.ts
+│  │     ├─ request-context.js
+│  │     ├─ request-context.js.map
+│  │     ├─ request-logger.d.ts
+│  │     ├─ request-logger.helper.d.ts
+│  │     ├─ request-logger.helper.js
+│  │     ├─ request-logger.helper.js.map
+│  │     ├─ request-logger.js
+│  │     └─ request-logger.js.map
+│  ├─ domain
+│  │  ├─ entities
+│  │  │  ├─ chat.entity.d.ts
+│  │  │  ├─ chat.entity.js
+│  │  │  ├─ chat.entity.js.map
+│  │  │  ├─ event-otp.entity.d.ts
+│  │  │  ├─ event-otp.entity.js
+│  │  │  ├─ event-otp.entity.js.map
+│  │  │  ├─ event.entity.d.ts
+│  │  │  ├─ event.entity.js
+│  │  │  └─ event.entity.js.map
+│  │  └─ interfaces
+│  │     ├─ chat-repository.interface.d.ts
+│  │     ├─ chat-repository.interface.js
+│  │     ├─ chat-repository.interface.js.map
+│  │     ├─ event-repository.interface.d.ts
+│  │     ├─ event-repository.interface.js
+│  │     ├─ event-repository.interface.js.map
+│  │     ├─ event-subscription-repository.interface.d.ts
+│  │     ├─ event-subscription-repository.interface.js
+│  │     ├─ event-subscription-repository.interface.js.map
+│  │     ├─ notification-sender.interface.d.ts
+│  │     ├─ notification-sender.interface.js
+│  │     └─ notification-sender.interface.js.map
+│  ├─ infrastructure
+│  │  ├─ chat
+│  │  │  ├─ chat.module.d.ts
+│  │  │  ├─ chat.module.js
+│  │  │  └─ chat.module.js.map
+│  │  ├─ event
+│  │  │  ├─ event.module.d.ts
+│  │  │  ├─ event.module.js
+│  │  │  └─ event.module.js.map
+│  │  ├─ notification
+│  │  │  ├─ notification.module.d.ts
+│  │  │  ├─ notification.module.js
+│  │  │  └─ notification.module.js.map
+│  │  ├─ prisma
+│  │  │  ├─ prisma.module.d.ts
+│  │  │  ├─ prisma.module.js
+│  │  │  ├─ prisma.module.js.map
+│  │  │  ├─ prisma.service.d.ts
+│  │  │  ├─ prisma.service.js
+│  │  │  └─ prisma.service.js.map
+│  │  ├─ scenes
+│  │  │  ├─ scenes.module.d.ts
+│  │  │  ├─ scenes.module.js
+│  │  │  └─ scenes.module.js.map
+│  │  └─ telegram
+│  │     ├─ telegram.module.d.ts
+│  │     ├─ telegram.module.js
+│  │     └─ telegram.module.js.map
+│  ├─ main.d.ts
+│  ├─ main.js
+│  ├─ main.js.map
+│  ├─ shared
+│  │  └─ formatters
+│  │     ├─ index.d.ts
+│  │     ├─ index.js
+│  │     ├─ index.js.map
+│  │     ├─ message-formatter.d.ts
+│  │     ├─ message-formatter.js
+│  │     └─ message-formatter.js.map
+│  ├─ tsconfig.build.tsbuildinfo
+│  └─ whatsapp
+│     ├─ baileys.client.d.ts
+│     ├─ baileys.client.js
+│     ├─ baileys.client.js.map
+│     ├─ whatsapp.gateway.d.ts
+│     ├─ whatsapp.gateway.js
+│     ├─ whatsapp.gateway.js.map
+│     ├─ whatsapp.service.d.ts
+│     ├─ whatsapp.service.js
+│     └─ whatsapp.service.js.map
+├─ eslint.config.mjs
+├─ front.html
+├─ nest-cli.json
+├─ package-lock.json
+├─ package.json
+├─ src
+│  ├─ adapters
+│  │  ├─ in
+│  │  │  ├─ rest-api
+│  │  │  │  ├─ dto
+│  │  │  │  │  ├─ create-event.dto.ts
+│  │  │  │  │  ├─ send-notification.dto.ts
+│  │  │  │  │  └─ suscribe-to-event.dto.ts
+│  │  │  │  ├─ events.controller.ts
+│  │  │  │  └─ notifications.controller.ts
+│  │  │  └─ telegram
+│  │  │     ├─ interfaces
+│  │  │     │  └─ context.interface.ts
+│  │  │     └─ scenes
+│  │  │        ├─ create-chat
+│  │  │        │  ├─ create-chat.scene.ts
+│  │  │        │  └─ create-chat.update.ts
+│  │  │        └─ menu
+│  │  │           └─ menu.update.ts
+│  │  └─ out
+│  │     ├─ prisma-chat-repository.adapter.ts
+│  │     ├─ prisma-event-repository.adapter.ts
+│  │     ├─ prisma-event-suscription-repository.adapter.ts
+│  │     └─ telegraf-notification-sender.adapter.ts
+│  ├─ app.module.ts
+│  ├─ app.service.ts
+│  ├─ application
+│  │  └─ use-cases
+│  │     ├─ create-chat.use-case.ts
+│  │     ├─ create-event.use-case.ts
+│  │     ├─ send-notification-to-chat.use-case.ts
+│  │     └─ subscribe-to-event.use-case.ts
+│  ├─ common
+│  │  ├─ events
+│  │  │  └─ internal-socket-events.ts
+│  │  └─ logger
+│  │     ├─ logger.module.ts
+│  │     ├─ logger.service.ts
+│  │     ├─ request-context.ts
+│  │     ├─ request-logger.helper.ts
+│  │     └─ request-logger.ts
+│  ├─ domain
+│  │  ├─ entities
+│  │  │  ├─ chat.entity.ts
+│  │  │  ├─ event-otp.entity.ts
+│  │  │  └─ event.entity.ts
+│  │  └─ interfaces
+│  │     ├─ chat-repository.interface.ts
+│  │     ├─ event-repository.interface.ts
+│  │     ├─ event-subscription-repository.interface.ts
+│  │     └─ notification-sender.interface.ts
+│  ├─ infrastructure
+│  │  ├─ chat
+│  │  │  └─ chat.module.ts
+│  │  ├─ event
+│  │  │  └─ event.module.ts
+│  │  ├─ notification
+│  │  │  └─ notification.module.ts
+│  │  ├─ prisma
+│  │  │  ├─ prisma.module.ts
+│  │  │  ├─ prisma.service.ts
+│  │  │  └─ schema.prisma
+│  │  ├─ scenes
+│  │  │  └─ scenes.module.ts
+│  │  └─ telegram
+│  │     └─ telegram.module.ts
+│  ├─ main.ts
+│  ├─ shared
+│  │  └─ formatters
+│  │     ├─ index.ts
+│  │     └─ message-formatter.ts
+│  └─ whatsapp
+│     ├─ baileys.client.ts
+│     ├─ whatsapp.gateway.ts
+│     └─ whatsapp.service.ts
+├─ test
+│  ├─ app.e2e-spec.ts
+│  └─ jest-e2e.json
+├─ tsconfig.build.json
+└─ tsconfig.json
+
+```

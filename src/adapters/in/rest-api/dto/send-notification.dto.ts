@@ -32,7 +32,18 @@ class NotificationPayloadDto {
   footer?: string;
 }
 
-export class SendNotificationDto {
+export class SendTelegramNotificationDto {
+  @IsString()
+  phone!: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NotificationPayloadDto)
+  payload!: NotificationPayloadDto;
+}
+export class SendWhatsappNotificationDto {
+  @IsString()
+  agent!: string;
   @IsString()
   phone!: string;
 

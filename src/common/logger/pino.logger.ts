@@ -1,5 +1,6 @@
 // src/utils/logger.ts
 import pino from 'pino';
+const logPath = process.env.LOG_PATH || '/tmp/notibot-logs/';
 
 export const pinoLogger = pino({
   transport: {
@@ -11,7 +12,7 @@ export const pinoLogger = pino({
       {
         target: 'pino/file',
         options: {
-          destination: `./src/logs/${new Date().toISOString().slice(0, 10)}.log`,
+          destination: `${logPath}${new Date().toISOString().slice(0, 10)}.log`,
         },
         level: 'debug',
       },

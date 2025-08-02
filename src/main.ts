@@ -6,7 +6,15 @@ import { requestLoggerMiddleware } from './common/logger/request-logger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin: process.env.ORIGIN || false,
+    origin: (origin, callback) => {
+      const allowedOrigins = process.env.ORIGIN?.split(',') || [];
+
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     preflightContinue: false,
   });

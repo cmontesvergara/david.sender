@@ -5,7 +5,11 @@ import { requestLoggerMiddleware } from './common/logger/request-logger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors();
+  app.enableCors({
+    origin: process.env.ORIGIN || false,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    preflightContinue: false,
+  });
   app.enableShutdownHooks();
   app.useGlobalPipes(
     new ValidationPipe({

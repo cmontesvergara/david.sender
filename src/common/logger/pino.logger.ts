@@ -1,7 +1,11 @@
 // src/utils/logger.ts
+import * as fs from 'fs';
 import pino from 'pino';
-const logPath = process.env.LOG_PATH || '/tmp/notibot-logs/';
 
+const logDir = process.env.LOG_PATH || '/tmp/notibot-logs/';
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir, { recursive: true });
+}
 export const pinoLogger = pino({
   transport: {
     // target:   'pino-pretty',
@@ -12,7 +16,7 @@ export const pinoLogger = pino({
       {
         target: 'pino/file',
         options: {
-          destination: `${logPath}${new Date().toISOString().slice(0, 10)}.log`,
+          destination: `${logDir}${new Date().toISOString().slice(0, 10)}.log`,
         },
         level: 'debug',
       },

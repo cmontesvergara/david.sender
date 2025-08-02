@@ -11,7 +11,7 @@ export const pinoLogger = pino({
       {
         target: 'pino/file',
         options: {
-          destination: `./logs/${new Date().toISOString().slice(0, 10)}.log`,
+          destination: `./src/logs/${new Date().toISOString().slice(0, 10)}.log`,
         },
         level: 'debug',
       },

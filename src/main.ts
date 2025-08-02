@@ -1,23 +1,47 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { requestLoggerMiddleware } from './common/logger/request-logger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors({
-    origin: (origin, callback) => {
-      const allowedOrigins = process.env.ORIGIN?.split(',') || [];
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const allowedOrigins = process.env.ORIGIN?.split(',').map((o) => o.trim());
 
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    preflightContinue: false,
+    // Si no hay ORIGIN definida en entorno, bloquea todo
+    if (!allowedOrigins || allowedOrigins.length === 0) {
+      return res
+        .status(403)
+        .json({ error: 'Access blocked: ORIGIN not defined' });
+    }
+
+    const origin = req.headers.origin;
+    const host = req.headers.host;
+
+    // Permitir solo si Origin o Host están explícitamente autorizados
+    const isAllowed =
+      (origin && allowedOrigins.includes(origin)) ||
+      (host && allowedOrigins.includes(`http://${host}`)) ||
+      (host && allowedOrigins.includes(`https://${host}`));
+
+    if (!isAllowed) {
+      return res
+        .status(403)
+        .json({ error: 'Access blocked: origin or host not allowed' });
+    }
+
+    next();
   });
+
+  // CORS solo si ORIGIN existe
+  if (process.env.ORIGIN) {
+    app.enableCors({
+      origin: process.env.ORIGIN.split(','),
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      preflightContinue: false,
+    });
+  }
   app.enableShutdownHooks();
   app.useGlobalPipes(
     new ValidationPipe({

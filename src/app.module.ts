@@ -7,6 +7,7 @@ import { TelegrafModule, TelegrafModuleOptions } from 'nestjs-telegraf';
 import { session } from 'telegraf';
 import { EventsController } from './adapters/in/rest-api/events.controller';
 import { NotificationsController } from './adapters/in/rest-api/notifications.controller'; // Si lo usas
+import { ObservabilityController } from './adapters/in/rest-api/observability.controller';
 import { LoggerModule } from './common/logger/logger.module';
 import { ChatModule } from './infrastructure/chat/chat.module';
 import { EventModule } from './infrastructure/event/event.module';
@@ -47,7 +48,11 @@ import { WhatsappModule } from './infrastructure/whatsapp/whatsapp.module';
     LoggerModule,
     WhatsappModule,
   ],
-  controllers: [NotificationsController, EventsController],
+  controllers: [
+    NotificationsController,
+    EventsController,
+    ObservabilityController,
+  ],
   providers: [WhatsappGateway],
 })
 export class AppModule {}

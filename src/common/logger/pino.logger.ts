@@ -2,7 +2,7 @@
 import * as fs from 'fs';
 import pino from 'pino';
 
-const logDir = process.env.LOG_PATH || '/tmp/notibot-logs/';
+const logDir = process.env.LOG_PATH || './src/logs/';
 if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
 }

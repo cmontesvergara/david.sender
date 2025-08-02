@@ -40,6 +40,9 @@ export class MessageFormatter {
       case 'INFO':
         emoji = 'ℹ️';
         break;
+      case 'ULTIMATE':
+        emoji = '🥏';
+        break;
       case 'ERROR':
         emoji = '❌';
         break;

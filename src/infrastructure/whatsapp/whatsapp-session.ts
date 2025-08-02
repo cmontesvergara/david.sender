@@ -21,7 +21,7 @@ export class WhatsappSession {
   private sock!: WASocket;
   private log = getLoggerWithRequestContext();
   private currentReconnectAttempts = 0;
-  private readonly MAX_RETRIES = 0;
+  private readonly MAX_RETRIES = 5;
   private readonly RETRY_DELAY = 3000; // ms
 
   constructor(

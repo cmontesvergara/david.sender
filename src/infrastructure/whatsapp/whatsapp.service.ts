@@ -101,6 +101,9 @@ export class WhatsappService implements OnModuleInit {
     this.sessions[phone] = session;
     await session.start();
   }
+  availableAgents(): any {
+    return Object.keys(this.sessions).filter((phone) => this.sessions[phone]);
+  }
 
   async getQR(phone: string): Promise<string | null> {
     const qrPath = WhatsappPath.qrFile(phone);

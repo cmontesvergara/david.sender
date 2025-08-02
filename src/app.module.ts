@@ -2,6 +2,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
+import { BullModule } from '@nestjs/bull';
 import { TelegrafModule, TelegrafModuleOptions } from 'nestjs-telegraf';
 import { session } from 'telegraf';
 import { EventsController } from './adapters/in/rest-api/events.controller';
@@ -19,7 +20,13 @@ import { WhatsappModule } from './infrastructure/whatsapp/whatsapp.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-
+    BullModule.forRoot({
+      redis: {
+        host: 'redis.msoft.uno',
+        port: 6379,
+        password: '@Password21',
+      },
+    }),
     TelegrafModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

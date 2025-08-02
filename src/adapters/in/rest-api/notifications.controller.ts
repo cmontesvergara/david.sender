@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
+import { WhatsappService } from '@/infrastructure/whatsapp/whatsapp.service';
 import {
   Body,
   Controller,
@@ -12,18 +13,21 @@ import {
   Res,
 } from '@nestjs/common';
 import { SendNotificationToChatUseCase } from 'application/use-cases/send-notification-to-chat.use-case';
+import { Response } from 'express';
 import {
   SendTelegramNotificationDto,
+  SendWhatsappDiffusionDto,
   SendWhatsappNotificationDto,
 } from './dto/send-notification.dto';
 
-import { WhatsappService } from '@/infrastructure/whatsapp/whatsapp.service';
-import { Response } from 'express';
+import { NotificationService } from '@/infrastructure/notification/notification.service';
+import { v4 as uuidv4 } from 'uuid';
 @Controller('api/v1/notifications')
 export class NotificationsController {
   constructor(
     private readonly sendNotification: SendNotificationToChatUseCase,
     private readonly whatsappService: WhatsappService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   @Post('telegram/send')
@@ -35,7 +39,7 @@ export class NotificationsController {
     return 'Notificación enviada con éxito.';
   }
 
-  @Post('whatsapp/send')
+  @Post('whatsapp/send/single')
   async sendMessage(
     @Body() body: SendWhatsappNotificationDto,
     @Req() req: Request,
@@ -44,6 +48,43 @@ export class NotificationsController {
     const { status, message } =
       await this.whatsappService.sendTextMessage(body);
     return res.status(status).json({ message });
+  }
+
+  @Post('whatsapp/send/diffusion')
+  async send(@Body() body: SendWhatsappDiffusionDto, @Res() res: Response) {
+    const transactionId = uuidv4();
+
+    if (body.agents?.length && body.phones?.length) {
+      const availableAgents = this.whatsappService.availableAgents();
+      const missingAgents = body.agents.filter(
+        (agent: string) => !availableAgents.includes(agent),
+      );
+
+      if (missingAgents.length > 0) {
+        return res.status(HttpStatus.FORBIDDEN).json({
+          message: `Algunos agentes no se encuentran disponibles.`,
+          agents: missingAgents,
+        });
+      }
+      await this.notificationService.enqueueMessages({
+        phoneList: body.phones,
+        agentList: body.agents,
+        payload: body.message,
+        trxId: transactionId,
+        options: body.options,
+      });
+
+      res.status(HttpStatus.ACCEPTED).json({
+        transactionId,
+        message: 'Envío en segundo plano en curso.',
+      });
+    }
+
+    return { message: 'Debe especificar phones' };
+  }
+  @Get('whatsapp/agent/available')
+  availableAgents() {
+    return this.whatsappService.availableAgents();
   }
 
   @Delete('whatsapp/session/end/:phone')

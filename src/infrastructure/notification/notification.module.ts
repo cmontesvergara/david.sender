@@ -1,10 +1,20 @@
+import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { TelegrafNotificationSender } from '../../adapters/out/telegraf-notification-sender.adapter';
 import { SendNotificationToChatUseCase } from '../../application/use-cases/send-notification-to-chat.use-case';
+import { TelegramModule } from '../telegram/telegram.module';
+import { NotificationService } from './notification.service';
 
 @Module({
-  // imports: [TelegramModule],
+  imports: [
+    TelegramModule,
+    BullModule.registerQueue({
+      name: 'whatsapp',
+    }),
+  ],
   providers: [
+    NotificationService,
+
     {
       provide: SendNotificationToChatUseCase,
       useFactory: (sender: TelegrafNotificationSender) =>
@@ -12,6 +22,6 @@ import { SendNotificationToChatUseCase } from '../../application/use-cases/send-
       inject: [TelegrafNotificationSender],
     },
   ],
-  exports: [SendNotificationToChatUseCase],
+  exports: [SendNotificationToChatUseCase, NotificationService],
 })
 export class NotificationModule {}

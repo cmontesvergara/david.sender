@@ -1,9 +1,12 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayNotEmpty,
+  IsArray,
   IsDefined,
   IsObject,
   IsOptional,
   IsString,
+  Matches,
   ValidateNested,
 } from 'class-validator';
 
@@ -44,6 +47,7 @@ export class SendTelegramNotificationDto {
 export class SendWhatsappNotificationDto {
   @IsString()
   agent!: string;
+
   @IsString()
   phone!: string;
 
@@ -51,4 +55,32 @@ export class SendWhatsappNotificationDto {
   @ValidateNested()
   @Type(() => NotificationPayloadDto)
   payload!: NotificationPayloadDto;
+}
+export class SendWhatsappDiffusionDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  @Matches(/^\d{12}$/, {
+    each: true,
+    message: 'Each agent must be a 10-digit number',
+  })
+  agents!: string[];
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  @Matches(/^\d{10}$/, {
+    each: true,
+    message: 'Each phone must be a 10-digit number',
+  })
+  phones!: string[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NotificationPayloadDto)
+  message!: NotificationPayloadDto;
+
+  @IsOptional()
+  @IsObject()
+  options?: Record<string, any> & { delay?: number };
 }

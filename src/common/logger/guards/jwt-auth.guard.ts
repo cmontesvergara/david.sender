@@ -32,7 +32,7 @@ export class JwtAuthGuard implements CanActivate {
         this.getKey.bind(this),
         {
           algorithms: ['RS256'],
-          issuer: process.env.SSO_DOMAIN,
+          issuer: process.env.FRONT_HOST,
         },
         (err, decoded: any) => {
           if (err) {

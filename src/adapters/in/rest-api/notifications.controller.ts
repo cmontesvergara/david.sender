@@ -11,6 +11,7 @@ import {
   Post,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { SendNotificationToChatUseCase } from 'application/use-cases/send-notification-to-chat.use-case';
 import { Response } from 'express';
@@ -20,8 +21,10 @@ import {
   SendWhatsappNotificationDto,
 } from './dto/send-notification.dto';
 
+import { JwtAuthGuard } from '@/common/logger/guards/jwt-auth.guard';
 import { NotificationService } from '@/infrastructure/notification/notification.service';
 import { v4 as uuidv4 } from 'uuid';
+@UseGuards(JwtAuthGuard)
 @Controller('api/v1/notifications')
 export class NotificationsController {
   constructor(

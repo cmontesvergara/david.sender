@@ -1,3 +1,4 @@
+import { JwtAuthGuard } from '@/common/logger/guards/jwt-auth.guard';
 import {
   Controller,
   Delete,
@@ -7,11 +8,13 @@ import {
   NotFoundException,
   Param,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 
+@UseGuards(JwtAuthGuard)
 @Controller('api/v1/observability')
 export class ObservabilityController {
   private readonly LOG_PATH = process.env.LOG_PATH || '';

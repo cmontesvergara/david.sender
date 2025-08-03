@@ -1,9 +1,11 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { JwtAuthGuard } from '@/common/logger/guards/jwt-auth.guard';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { CreateEventUseCase } from 'application/use-cases/create-event.use-case';
 import { SubscribeToEventUseCase } from 'application/use-cases/subscribe-to-event.use-case';
 import { CreateEventDto } from './dto/create-event.dto';
 import { SuscribeToEventDto } from './dto/suscribe-to-event.dto';
 
+@UseGuards(JwtAuthGuard)
 @Controller('api/v1/events')
 export class EventsController {
   constructor(

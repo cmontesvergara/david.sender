@@ -1,0 +1,11 @@
+{
+    "name": "Notibot",
+    "description": "Servicio de notificaciones vía WhatsApp y Telegram mediante NestJS y Bull",
+    "project": "notibot",
+    "ownerTeam": "notibot-team",
+    "techLead": "lead@empresa.com",
+    "supportChannel": "#notibot",
+    "lifecycle": "active",
+    "version": "0.0.1",
+    "lastReviewed": "2026-03-13"
+}

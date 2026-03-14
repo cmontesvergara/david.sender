@@ -11,6 +11,7 @@ import {
 import { PinoLoggerService } from 'common/logger/logger.service';
 import * as fs from 'fs/promises';
 import { MessageFormatter } from 'shared/formatters/message-formatter';
+import { RedisService } from '../redis/redis.service';
 import { FileService } from './file.service';
 import { WhatsappSession } from './whatsapp-session';
 import { WhatsappGateway } from './whatsapp.gateway';
@@ -21,9 +22,10 @@ export class WhatsappService implements OnModuleInit {
 
   constructor(
     private readonly gateway: WhatsappGateway,
-    private readonly sendNotification: SendNotificationToChatUseCase,
+    private readonly notificationSender: SendNotificationToChatUseCase,
     private readonly logger: PinoLoggerService,
     private readonly qrFileService: FileService,
+    private readonly redisService: RedisService,
   ) {}
 
   async onModuleInit() {
@@ -31,7 +33,7 @@ export class WhatsappService implements OnModuleInit {
       const phone = data.agent;
       void this.endSession(phone);
       if (data.sendNotification) {
-        void this.sendNotification.execute('573503417243', {
+        void this.notificationSender.execute('573503417243', {
           meta: {
             title: 'AGENTE FUERA DE SERVICIO',
             type: 'ALERTA',
@@ -42,33 +44,40 @@ export class WhatsappService implements OnModuleInit {
       }
     });
 
-    const authDir = WhatsappPath.AUTH_ROOT;
     try {
-      const exists = await fs
-        .access(authDir)
-        .then(() => true)
-        .catch(() => false);
+      const redis = this.redisService.getClient();
+      let cursor = '0';
+      const phonesSet = new Set<string>();
 
-      if (!exists) {
-        this.logger.info(
-          '🔍 No hay sesiones previas que cargar (authDir no existe).',
+      do {
+        const [nextCursor, keys] = await redis.scan(
+          cursor,
+          'MATCH',
+          'baileys:session:*:creds',
+          'COUNT',
+          100,
         );
-        return;
-      }
+        cursor = nextCursor;
 
-      const entries = await fs.readdir(authDir, { withFileTypes: true });
-      const phoneDirs = entries.filter((entry) => entry.isDirectory());
-      const phones = phoneDirs.map((dir) => dir.name);
+        for (const key of keys) {
+          const parts = key.split(':');
+          if (parts.length >= 4) {
+            phonesSet.add(parts[2]);
+          }
+        }
+      } while (cursor !== '0');
+
+      const phones = Array.from(phonesSet);
 
       if (phones.length === 0) {
         this.logger.info(
-          '🔍 No hay sesiones previas que cargar (authDir está vacío).',
+          '🔍 No hay sesiones previas que cargar desde Redis.',
         );
         return;
       }
 
       this.logger.info(
-        `📦 Cargando ${phones.length} sesión(es) desde authDir...`,
+        `📦 Cargando ${phones.length} sesión(es) de WhatsApp desde Redis...`,
       );
 
       for (const phone of phones) {
@@ -76,7 +85,7 @@ export class WhatsappService implements OnModuleInit {
       }
     } catch (err) {
       this.logger.error(
-        '❌ Error al leer el directorio de sesiones ./auth:',
+        '❌ Error al escanear sesiones activas en Redis:',
         err,
       );
     }
@@ -96,6 +105,7 @@ export class WhatsappService implements OnModuleInit {
         // podrías guardar el socket aquí si necesitas acceso directo
       },
       this.qrFileService,
+      this.redisService.getClient(),
     );
 
     this.sessions[phone] = session;

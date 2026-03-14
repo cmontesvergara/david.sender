@@ -2,7 +2,7 @@
 import { getLoggerWithRequestContext } from '@/common/logger/request-logger.helper';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
-import { Queue } from 'bull';
+import { Job, Queue } from 'bull';
 type EnqueueMessagesParams = {
   phoneList: string[];
   agentList: string[];
@@ -13,6 +13,36 @@ type EnqueueMessagesParams = {
 @Injectable()
 export class NotificationService {
   constructor(@InjectQueue('whatsapp') private whatsappQueue: Queue) {}
+
+  /**
+   * Verifica si existe un job con el jobId dado
+   */
+  async exists(jobId: string): Promise<boolean> {
+    const job = await this.whatsappQueue.getJob(jobId);
+    return !!job;
+  }
+
+  /**
+   * Obtiene el job por jobId
+   */
+  async getJob(jobId: string): Promise<Job | null> {
+    return this.whatsappQueue.getJob(jobId);
+  }
+
+  /**
+   * Promueve un job delayed a waiting para que se ejecute ya
+   */
+  async promoteJob(jobId: string): Promise<boolean> {
+    const job = await this.whatsappQueue.getJob(jobId);
+    if (!job) return false;
+
+    const state = await job.getState();
+    if (state === 'delayed') {
+      await job.promote();
+      return true;
+    }
+    return false; // no estaba delayed
+  }
 
   async enqueueMessages({
     phoneList,
@@ -26,7 +56,13 @@ export class NotificationService {
       const delay = options?.delay ?? Math.floor(Math.random() * 60000); // 0–60s
       await this.whatsappQueue.add(
         'send-message',
-        { phone, payload, trxId, agent: agentList[agentIndex] },
+        {
+          jobId: options?.JobId,
+          phone,
+          payload,
+          trxId,
+          agent: agentList[agentIndex],
+        },
         { delay, attempts: 3 },
       );
       getLoggerWithRequestContext().info(

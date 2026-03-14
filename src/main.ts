@@ -1,8 +1,8 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { requestLoggerMiddleware } from './common/logger/request-logger';
+import { NextFunction, Request, Response } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -34,7 +34,7 @@ async function bootstrap() {
     next();
   });
 
-  // CORS solo si ORIGIN existe
+  // Habilitar CORS solo si ORIGIN existe
   if (process.env.ORIGIN) {
     app.enableCors({
       origin: process.env.ORIGIN.split(','),

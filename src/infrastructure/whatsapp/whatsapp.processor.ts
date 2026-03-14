@@ -6,7 +6,7 @@ import { WhatsappService } from './whatsapp.service';
 
 @Processor('whatsapp')
 export class WhatsappProcessor {
-  constructor(private readonly whatsappService: WhatsappService) {}
+  constructor(private readonly whatsappService: WhatsappService) { }
 
   @Process('send-message')
   async handleSendMessage(job: Job) {
@@ -22,6 +22,9 @@ export class WhatsappProcessor {
         phone,
         payload,
       });
+      //TODO: guardar en base de datos el envio
+      //TODO: eliminar de la cola o evaluar un cron para limpiar la cola
+
     } catch (error) {
       console.error(`Error al enviar a ${phone}`, error);
       throw error; // para que Bull reintente si configuraste attempts

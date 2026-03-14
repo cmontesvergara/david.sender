@@ -11,7 +11,7 @@ import {
   Post,
   Req,
   Res,
-  UseGuards,
+  //UseGuards,
 } from '@nestjs/common';
 import { SendNotificationToChatUseCase } from 'application/use-cases/send-notification-to-chat.use-case';
 import { Response } from 'express';
@@ -21,17 +21,43 @@ import {
   SendWhatsappNotificationDto,
 } from './dto/send-notification.dto';
 
-import { JwtAuthGuard } from '@/common/logger/guards/jwt-auth.guard';
+//import { JwtAuthGuard } from '@/common/logger/guards/jwt-auth.guard';
+
+import {
+  internalSocketEvents,
+  WppSocketEvents,
+} from '@/common/events/internal-socket-events';
 import { NotificationService } from '@/infrastructure/notification/notification.service';
 import { v4 as uuidv4 } from 'uuid';
-@UseGuards(JwtAuthGuard)
+//@UseGuards(JwtAuthGuard)
 @Controller('api/v1/notifications')
 export class NotificationsController {
   constructor(
     private readonly sendNotification: SendNotificationToChatUseCase,
     private readonly whatsappService: WhatsappService,
     private readonly notificationService: NotificationService,
-  ) {}
+  ) {
+    internalSocketEvents.on(WppSocketEvents.HasUserResponse, (data) => {
+      /*
+          logica de validar si el chat 
+          esta entre los notificados 
+          recientemente por el agente*/
+
+      const jobId = `after-interaction:${data.sender}`;
+      void this.notificationService.getJob(jobId).then((job) => {
+        if (job) {
+          void job.getState().then((state) => {
+            if (state === 'delayed') {
+              console.log(`El job ${jobId} está en delayed`);
+              void job.promote();
+            } else {
+              console.log(`El job ${jobId} está en estado: ${state}`);
+            }
+          });
+        }
+      });
+    });
+  }
 
   @Post('telegram/send')
   @HttpCode(HttpStatus.OK)
@@ -48,9 +74,43 @@ export class NotificationsController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    const { status, message } =
-      await this.whatsappService.sendTextMessage(body);
-    return res.status(status).json({ message });
+    const transactionId = uuidv4();
+    const options = {
+      validateInteraction: false,//TODO: validar logica de interaccion
+    };
+    if (options.validateInteraction) {
+      const jobId = `after-interaction:${body.phone}`;
+      const message = {
+        meta: {
+          type: 'ALERTA',
+          title: '',
+        },
+        body: {
+          empty: 'Hola, tengo un mensaje para ti.',
+        },
+        footer: ' ',
+      };
+      await this.notificationService.enqueueMessages({
+        phoneList: [body.phone],
+        agentList: [body.agent],
+        payload: message,
+        trxId: transactionId,
+        options: { jobId },
+      });
+    } else {
+      await this.notificationService.enqueueMessages({
+        phoneList: [body.phone],
+        agentList: [body.agent],
+        payload: body.payload,
+        trxId: transactionId,
+        options: {},
+      });
+    }
+
+    res.status(HttpStatus.ACCEPTED).json({
+      transactionId,
+      message: 'Envío en segundo plano en curso.',
+    });
   }
 
   @Post('whatsapp/send/diffusion')
@@ -105,9 +165,10 @@ export class NotificationsController {
   }
 
   @Get('whatsapp/session/qr/:phone')
-  async getQr(@Param('phone') phone: string) {
+  async getQr(@Res() res: Response, @Param('phone') phone: string) {
     const qr = await this.whatsappService.getQR(phone);
-    if (!qr) return { status: 'not_ready' };
-    return { qr };
+    if (!qr)
+      return res.status(HttpStatus.NOT_FOUND).json({ status: 'not_ready' });
+    return res.json(qr);
   }
 }

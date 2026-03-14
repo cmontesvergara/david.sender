@@ -17,6 +17,7 @@ import { ScenesModule } from './infrastructure/scenes/scenes.module';
 import { TelegramModule } from './infrastructure/telegram/telegram.module';
 import { WhatsappGateway } from './infrastructure/whatsapp/whatsapp.gateway';
 import { WhatsappModule } from './infrastructure/whatsapp/whatsapp.module';
+import { RedisModule } from './infrastructure/redis/redis.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { WhatsappModule } from './infrastructure/whatsapp/whatsapp.module';
     ChatModule,
     LoggerModule,
     WhatsappModule,
+    RedisModule,
   ],
   controllers: [
     NotificationsController,

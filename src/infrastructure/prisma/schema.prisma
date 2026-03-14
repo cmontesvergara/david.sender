@@ -62,3 +62,112 @@ model EventOtp {
 
     chat Chat @relation(fields: [phoneVinculate], references: [phone])
 }
+
+//---- Agent Schema ---------------------------------------------
+// ==== ENUMS ====
+
+enum AgentType {
+    generic
+    transactional
+    client_owned
+}
+
+enum SessionStatus {
+    connected
+    disconnected
+    banned
+    error
+}
+
+// ==== MODELS ====
+
+model Agent {
+    id      String    @id @default(uuid())
+    phone   String    @unique
+    alias   String
+    type    AgentType
+    ownerId String? // Puede ser null si es generic o transactional
+
+    categories        String[] // Array de strings
+    blockedCategories String[] // Array de strings
+
+    profile      Profile?
+    session      Session?
+    limits       Limits?
+    availability Availability?
+    antiBan      AntiBan?
+    stats        Stats?
+
+    contactsInteracted ContactInteraction[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model Profile {
+    id                  String  @id @default(uuid())
+    displayName         String
+    profilePictureUrl   String
+    businessDescription String
+    verified            Boolean
+    agent               Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+    agentId             String  @unique
+}
+
+model Session {
+    id                 String        @id @default(uuid())
+    status             SessionStatus
+    lastConnectedAt    DateTime
+    baileysSessionPath String
+    errorMessage       String?
+    agent              Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
+    agentId            String        @unique
+}
+
+model Limits {
+    id                            String @id @default(uuid())
+    maxMessagesPerDay             Int
+    maxMessagesPerHour            Int
+    maxConcurrentMessages         Int
+    maxRepeatedMessagesPerContact Int
+    agent                         Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+    agentId                       String @unique
+}
+
+model Availability {
+    id          String @id @default(uuid())
+    activeHours Json // [{ start: "HH:mm", end: "HH:mm" }]
+    timeZone    String
+    agent       Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+    agentId     String @unique
+}
+
+model AntiBan {
+    id                   String    @id @default(uuid())
+    riskScore            Float
+    cooldownDelayMs      Int
+    lastRiskAssessmentAt DateTime
+    lastBanCheckAt       DateTime?
+    agent                Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+    agentId              String    @unique
+}
+
+model Stats {
+    id                String   @id @default(uuid())
+    messagesSentToday Int
+    messagesSentTotal Int
+    successRate       Float
+    lastMessageAt     DateTime
+    agent             Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+    agentId           String   @unique
+}
+
+model ContactInteraction {
+    id                String    @id @default(uuid())
+    phone             String
+    lastInteractionAt DateTime
+    messagesSentCount Int
+    lastReplyAt       DateTime?
+    agent             Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+    agentId           String
+}

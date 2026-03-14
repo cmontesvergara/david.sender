@@ -5,9 +5,11 @@ import { Boom } from '@hapi/boom';
 import makeWASocket, {
   DisconnectReason,
   proto,
-  useMultiFileAuthState,
   WASocket,
+  fetchLatestBaileysVersion
 } from '@whiskeysockets/baileys';
+import { useRedisAuthState } from './auth/redis-auth-state';
+import Redis from 'ioredis';
 import {
   internalSocketEvents,
   WppSocketEvents,
@@ -29,17 +31,31 @@ export class WhatsappSession {
     private readonly gateway: WhatsappGateway,
     private readonly onNewSocket: (sock: WASocket) => void,
     private readonly qrFileService: FileService,
-  ) {}
+    private readonly redisClient: Redis,
+  ) { }
 
   public async start(): Promise<void> {
-    const { state, saveCreds } = await useMultiFileAuthState(
-      WhatsappPath.credsDir(this.phone),
+    const { state, saveCreds } = await useRedisAuthState(
+      this.redisClient,
+      this.phone,
     );
 
-    this.sock = makeWASocket({ auth: state });
+    const { version, isLatest } = await fetchLatestBaileysVersion();
+    this.log.info({ version, isLatest }, 'WhatsApp Web Version fetched');
+
+    this.sock = makeWASocket({
+      auth: state,
+      version,
+      printQRInTerminal: false,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      logger: this.log as any, // Usar logger centralizado
+    });
 
     this.onNewSocket(this.sock);
-    this.sock.ev.on('creds.update', saveCreds);
+    this.sock.ev.on('creds.update', async () => {
+      this.log.info({ phone: this.phone }, '🔄 Actualizando credenciales en Redis...');
+      await saveCreds();
+    });
     this.sock.ev.on('connection.update', (update) =>
       this.handleConnectionUpdate(update),
     );
@@ -52,6 +68,10 @@ export class WhatsappSession {
     if (this.sock) {
       await this.sock.logout();
       await this.qrFileService.removeWhatsappSessionFiles(agent);
+      const keys = await this.redisClient.keys(`baileys:session:${agent}:*`);
+      if (keys.length > 0) {
+        await this.redisClient.del(...keys);
+      }
     }
   }
 
@@ -59,6 +79,7 @@ export class WhatsappSession {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
+      this.log.info({ phone: this.phone }, '📱 Generando nuevo QR code...');
       const qrBase64 = await qrcode.toDataURL(qr);
       await this.qrFileService.saveWhatsappQR(this.phone, qrBase64);
     }
@@ -127,8 +148,23 @@ export class WhatsappSession {
     const text =
       m.message?.conversation || m.message?.extendedTextMessage?.text;
 
-    this.log.info({ sender, text }, `📩 Mensaje recibido`);
-    this.gateway.sendToClient('new-whatsapp-message', { sender, text });
+    this.log.info(
+      { sender, text, message: m.message, timestamp: m.messageTimestamp },
+      `[Mensaje recibido]`,
+    );
+    internalSocketEvents.emit(WppSocketEvents.HasUserResponse, {
+      agent: this.phone,
+      sender,
+      reason: 'Send only after user interaction',
+      action: 'Validate for Re-enqueued message.',
+    });
+
+    this.gateway.sendToClient('new-whatsapp-message', {
+      sender,
+      text,
+      message: m.message,
+      timestamp: m.messageTimestamp,
+    });
   }
 
   public async sendText(jid: string, message: string): Promise<void> {

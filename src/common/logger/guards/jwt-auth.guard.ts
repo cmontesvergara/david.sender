@@ -18,6 +18,10 @@ export class JwtAuthGuard implements CanActivate {
     });
   }
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    if (process.env.NODE_ENV !== 'production') {
+      return true;
+    }
+    console.log('using /.well-known/jwks.json of:', process.env.SSO_HOST);
     const req = context.switchToHttp().getRequest();
     const auth = req.headers.authorization;
 
@@ -71,7 +75,7 @@ export class JwtAuthGuard implements CanActivate {
   private getKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
     this.client.getSigningKey(header.kid, function (err, key) {
       const signingKey = key?.getPublicKey();
-      console.log('Signing key:', err, signingKey);
+      //console.log('Signing key:', err, signingKey);
       callback(err, signingKey);
     });
   }

@@ -25,7 +25,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.client.on('connect', () => {
-      this.logger.info('🟢 Conectado a Redis (RedisService) exitosamente.');
+      this.logger.info(`🟢 Conectado a Redis (RedisService: ${host}:${port}) exitosamente.`);
       // Prueba de escritura rápida para verificar permisos
       this.client.set('test_connection', 'ok_ready')
         .then(() => this.logger.info('✅ Redis connection test: write successful.'))

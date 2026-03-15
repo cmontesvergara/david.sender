@@ -171,3 +171,14 @@ model ContactInteraction {
     agent             Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
     agentId           String
 }
+
+model NotificationLog {
+    id        String   @id @default(uuid())
+    trxId     String?
+    phone     String
+    agent     String
+    payload   Json
+    status    String
+    error     String?
+    createdAt DateTime @default(now())
+}

@@ -63,7 +63,14 @@ export class NotificationService {
           trxId,
           agent: agentList[agentIndex],
         },
-        { delay, attempts: 3 },
+        {
+          delay,
+          attempts: 3,
+          removeOnComplete: true, // Limpia automáticamente al completar
+          removeOnFail: {
+            count: 100, // Mantiene los últimos 100 fallidos para auditoría
+          },
+        },
       );
       getLoggerWithRequestContext().info(
         {

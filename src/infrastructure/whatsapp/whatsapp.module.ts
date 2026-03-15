@@ -6,8 +6,10 @@ import { WhatsappGateway } from './whatsapp.gateway';
 import { WhatsappProcessor } from './whatsapp.processor';
 import { WhatsappService } from './whatsapp.service';
 
+import { PrismaModule } from '../prisma/prisma.module';
+
 @Module({
-  imports: [NotificationModule],
+  imports: [NotificationModule, PrismaModule],
   providers: [
     WhatsappProcessor,
     PinoLoggerService,

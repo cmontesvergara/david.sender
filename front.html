@@ -44,6 +44,8 @@
     <div id="resultado"></div>
 
     <script>
+        // const BASE_URL = 'https://david.bigso.co';
+        const BASE_URL = 'http://localhost:3000';
         async function iniciarSesion() {
             const phone = document.getElementById('telefono').value.trim();
             if (!phone) {
@@ -52,7 +54,7 @@
             }
 
             try {
-                const respuesta = await fetch(`http://localhost:3000/api/v1/notifications/whatsapp/session/init/${phone}`, {
+                const respuesta = await fetch(`${BASE_URL}/api/v1/notifications/whatsapp/session/init/${phone}`, {
                     method: 'GET'
                 });
 
@@ -76,12 +78,12 @@
             }
 
             try {
-                const respuesta = await fetch(`http://localhost:3000/api/v1/notifications/whatsapp/session/qr/${phone}`);
+                const respuesta = await fetch(`${BASE_URL}/api/v1/notifications/whatsapp/session/qr/${phone}`);
                 const data = await respuesta.json();
 
-                if (data.qr) {
+                if (data) {
                     const img = document.createElement('img');
-                    img.src = data.qr;
+                    img.src = data;
                     const contenedor = document.getElementById('resultado');
                     contenedor.innerHTML = '';
                     contenedor.appendChild(img);

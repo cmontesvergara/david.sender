@@ -116,13 +116,17 @@ export class WhatsappService implements OnModuleInit {
   }
 
   async getQR(phone: string): Promise<string | null> {
-    const qrPath = WhatsappPath.qrFile(phone);
     try {
-      const content = await fs.readFile(qrPath, 'utf-8');
-      const data = JSON.parse(content);
+      const redisClient = this.redisService.getClient();
+      const qrKey = `baileys:qr:${phone}`;
+      const content = await redisClient.get(qrKey);
 
+      if (!content) return null;
+
+      const data = JSON.parse(content);
       return data.qr;
-    } catch {
+    } catch (error) {
+      this.logger.error(`Error al obtener QR de Redis para ${phone}:`, error);
       return null;
     }
   }

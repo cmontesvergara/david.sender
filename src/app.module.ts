@@ -22,12 +22,16 @@ import { RedisModule } from './infrastructure/redis/redis.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    BullModule.forRoot({
-      redis: {
-        host: 'redis.msoft.uno',
-        port: 6379,
-        password: '@Password21',
-      },
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        redis: {
+          host: configService.get<string>('REDIS_HOST')!,
+          port: configService.get<number>('REDIS_PORT')!,
+          password: configService.get<string>('REDIS_PASSWORD')!,
+        },
+      }),
     }),
     TelegrafModule.forRootAsync({
       imports: [ConfigModule],
@@ -41,7 +45,7 @@ import { RedisModule } from './infrastructure/redis/redis.module';
       }),
     }),
     ScenesModule,
-    TelegramModule,
+    //TelegramModule,
     PrismaModule,
     NotificationModule,
     EventModule,
@@ -57,4 +61,4 @@ import { RedisModule } from './infrastructure/redis/redis.module';
   ],
   providers: [WhatsappGateway],
 })
-export class AppModule {}
+export class AppModule { }

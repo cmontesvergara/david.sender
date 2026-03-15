@@ -4,24 +4,29 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
 import jwksClient from 'jwks-rsa';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   client;
-  constructor() {
+  constructor(private readonly configService: ConfigService) {
     this.client = jwksClient({
-      jwksUri: `${process.env.SSO_HOST}/.well-known/jwks.json`,
+      jwksUri: `${this.configService.get<string>('SSO_HOST')}/.well-known/jwks.json`,
       cache: true,
       rateLimit: true,
     });
   }
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    if (process.env.NODE_ENV !== 'production') {
+    const nodeEnv = this.configService.get<string>('NODE_ENV');
+    console.log('Current NODE_ENV (via ConfigService):', `|${nodeEnv}|`);
+
+    if (nodeEnv?.trim().replace(/['"]/g, '') !== 'production') {
+      console.log('Bypassing JwtAuthGuard in non-production environment');
       return true;
     }
-    console.log('using /.well-known/jwks.json of:', process.env.SSO_HOST);
+    console.log('Validating JWT in production environment...');
     const req = context.switchToHttp().getRequest();
     const auth = req.headers.authorization;
 
@@ -29,14 +34,14 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Missing token');
     }
 
-    const token = auth.split(' ')[1];
+    const token = auth.split(' ')[1].trim();
     return new Promise((resolve, reject) => {
       jwt.verify(
         token,
         this.getKey.bind(this),
         {
           algorithms: ['RS256'],
-          issuer: process.env.SSO_FRONT_HOST,
+          issuer: this.configService.get<string>('SSO_FRONT_HOST') as string,
         },
         (err, decoded: any) => {
           if (err) {
@@ -45,7 +50,7 @@ export class JwtAuthGuard implements CanActivate {
           }
 
           const tokenAud = decoded.aud;
-          const currentHost = process.env.CURRENT_HOST as string;
+          const currentHost = this.configService.get<string>('CURRENT_HOST') || '';
 
           if (Array.isArray(tokenAud)) {
             if (!tokenAud.includes(currentHost)) {

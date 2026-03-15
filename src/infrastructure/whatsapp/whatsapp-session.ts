@@ -25,6 +25,7 @@ export class WhatsappSession {
   private currentReconnectAttempts = 0;
   private readonly MAX_RETRIES = 5;
   private readonly RETRY_DELAY = 3000; // ms
+  private isClearing = false;
 
   constructor(
     private readonly phone: string,
@@ -35,54 +36,71 @@ export class WhatsappSession {
   ) { }
 
   public async start(): Promise<void> {
-    const { state, saveCreds } = await useRedisAuthState(
-      this.redisClient,
-      this.phone,
-    );
+    try {
+      const { state, saveCreds } = await useRedisAuthState(
+        this.redisClient,
+        this.phone,
+      );
 
-    const { version, isLatest } = await fetchLatestBaileysVersion();
-    this.log.info({ version, isLatest }, 'WhatsApp Web Version fetched');
+      const { version, isLatest } = await fetchLatestBaileysVersion();
+      this.log.info({ version, isLatest }, 'WhatsApp Web Version fetched');
 
-    this.sock = makeWASocket({
-      auth: state,
-      version,
-      printQRInTerminal: false,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      logger: this.log as any, // Usar logger centralizado
-    });
+      this.sock = makeWASocket({
+        auth: state,
+        version,
+        printQRInTerminal: false,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        logger: this.log as any, // Usar logger centralizado
+      });
 
-    this.onNewSocket(this.sock);
-    this.sock.ev.on('creds.update', async () => {
-      this.log.info({ phone: this.phone }, '🔄 Actualizando credenciales en Redis...');
-      await saveCreds();
-    });
-    this.sock.ev.on('connection.update', (update) =>
-      this.handleConnectionUpdate(update),
-    );
-    this.sock.ev.on('messages.upsert', (msg) =>
-      this.handleIncomingMessage(msg),
-    );
+      this.onNewSocket(this.sock);
+      this.sock.ev.on('creds.update', async () => {
+        this.log.info({ phone: this.phone }, '🔄 Actualizando credenciales en Redis...');
+        await saveCreds();
+      });
+      this.sock.ev.on('connection.update', (update) =>
+        this.handleConnectionUpdate(update),
+      );
+      this.sock.ev.on('messages.upsert', (msg) =>
+        this.handleIncomingMessage(msg),
+      );
+    } catch (err) {
+      this.log.error({ phone: this.phone, err }, 'Error fatal iniciando sesión WhatsApp');
+      void this.logout(this.phone);
+    }
   }
 
   public async logout(agent: string): Promise<void> {
+    if (this.isClearing) {
+      this.log.info({ agent }, `Limpieza ya en curso para ${agent}, omitiendo.`);
+      return;
+    }
+    this.isClearing = true;
+
     this.log.info({ agent }, `Cerrando sesión para el agente: ${agent}`);
 
     if (this.sock) {
       try {
+        // Intentamos un logout limpio solo si el socket parece estar vivo
+        // Si ya sabemos que está cerrado (e.g. por conflicto), omitimos para evitar crash
         await this.sock.logout();
       } catch (err) {
-        this.log.warn({ agent, err }, 'Error al intentar sock.logout(), procediendo con limpieza forzada.');
+        this.log.warn({ agent, err: (err as any)?.message }, 'Error al intentar sock.logout() o socket ya cerrado.');
       }
     }
 
-    // Limpiar archivos locales y QR en Redis
-    await this.qrFileService.removeWhatsappSessionFiles(agent);
+    try {
+      // Limpiar archivos locales y QR en Redis
+      await this.qrFileService.removeWhatsappSessionFiles(agent);
 
-    // Limpiar credenciales de sesión en Redis
-    const keys = await this.redisClient.keys(`baileys:session:${agent}:*`);
-    if (keys.length > 0) {
-      await this.redisClient.del(...keys);
-      this.log.info({ agent, keysCount: keys.length }, 'Credenciales de sesión eliminadas de Redis.');
+      // Limpiar credenciales de sesión en Redis
+      const keys = await this.redisClient.keys(`baileys:session:${agent}:*`);
+      if (keys.length > 0) {
+        await this.redisClient.del(...keys);
+        this.log.info({ agent, keysCount: keys.length }, 'Credenciales de sesión eliminadas de Redis.');
+      }
+    } catch (err) {
+      this.log.error({ agent, err }, 'Error durante la limpieza forzada de sesión.');
     }
   }
 

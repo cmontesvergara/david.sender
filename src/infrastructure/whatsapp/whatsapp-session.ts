@@ -65,13 +65,24 @@ export class WhatsappSession {
   }
 
   public async logout(agent: string): Promise<void> {
+    this.log.info({ agent }, `Cerrando sesión para el agente: ${agent}`);
+
     if (this.sock) {
-      await this.sock.logout();
-      await this.qrFileService.removeWhatsappSessionFiles(agent);
-      const keys = await this.redisClient.keys(`baileys:session:${agent}:*`);
-      if (keys.length > 0) {
-        await this.redisClient.del(...keys);
+      try {
+        await this.sock.logout();
+      } catch (err) {
+        this.log.warn({ agent, err }, 'Error al intentar sock.logout(), procediendo con limpieza forzada.');
       }
+    }
+
+    // Limpiar archivos locales y QR en Redis
+    await this.qrFileService.removeWhatsappSessionFiles(agent);
+
+    // Limpiar credenciales de sesión en Redis
+    const keys = await this.redisClient.keys(`baileys:session:${agent}:*`);
+    if (keys.length > 0) {
+      await this.redisClient.del(...keys);
+      this.log.info({ agent, keysCount: keys.length }, 'Credenciales de sesión eliminadas de Redis.');
     }
   }
 
@@ -99,6 +110,9 @@ export class WhatsappSession {
             { phone: this.phone },
             'Sesión cerrada permanentemente (loggedOut)',
           );
+          // Limpiar datos
+          await this.logout(this.phone);
+
           internalSocketEvents.emit(WppSocketEvents.SessionDisconnected, {
             agent: this.phone,
             status: statusCode,
@@ -121,6 +135,10 @@ export class WhatsappSession {
               { phone: this.phone },
               'Máximos intentos de reconexión alcanzados',
             );
+
+            // Limpiar datos al agotar intentos
+            await this.logout(this.phone);
+
             internalSocketEvents.emit(WppSocketEvents.SessionDisconnected, {
               agent: this.phone,
               status: statusCode,
